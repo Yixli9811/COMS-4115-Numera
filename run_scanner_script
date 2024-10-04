@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Check if the user provided an input file
+if [ "$#" -ne 1 ]; then
+    echo "Usage: ./run_scanner_script.sh <input_file>"
+    exit 1
+fi
+
+# Check if the file exists
+if [ ! -f "$1" ]; then
+    echo "File $1 not found!"
+    exit 1
+fi
+
+# Run the lexer with the input file
+echo "Running scanner on $1..."
+python3 main.py "$1"
