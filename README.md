@@ -1,2 +1,5 @@
 # COMS-4115-Numera
-Class project for COMS 4115
+
+Team:
+* Yixuan Li (yl3803)
+* Meng Gao (mg4774)
