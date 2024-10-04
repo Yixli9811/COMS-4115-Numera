@@ -1,2 +1,2 @@
-Hello Python
-Line 2
+var a = (10 + 20) * 2;
+print(a);
