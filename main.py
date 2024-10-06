@@ -15,7 +15,9 @@ def main():
         print(f"Error: File {file} not found.")
         sys.exit(1)
 
-    result = scanner.scan(code)
+    result = scanner.scan(file)
+    for token in result:
+        print(token)
 
 if __name__ == "__main__":
     main()
