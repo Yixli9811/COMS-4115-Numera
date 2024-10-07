@@ -1,78 +1,75 @@
+from .grammar import *
+from .token import Token
 
 def scan(filename):
-    print("scanner start")
-    token_specification = [
-        ('KEYWORD', ['if', 'then', 'else', 'while', 'do', 'end', 'procedure', 'var', 'begin', 'print']),
-        ('OPERATOR', ['=','+', '-', '*', '/', '==', '!=', '<=', '>=', '<', '>', 'and', 'or', 'not']),
-        ('SEPARATOR', [';']),
-        ('LPAR', ['(']),
-        ('RPAR', [')'])
-    ]
-    
+    print("scanner start...")
     tokens = []
+
+    sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] if not op.isalpha()],
+                       key=lambda x: -len(x))
+    symbols = token_specification[TokenType.SEPARATOR] | token_specification[TokenType.LPAR] | \
+                token_specification[TokenType.RPAR]
     
-    with open(filename, 'r', encoding='utf-8') as file:
-        for line in file:
+    with (open(filename, 'r', encoding='utf-8') as file):
+        for num, line in enumerate(file):
             input_string = line.strip()
             i = 0
             while i < len(input_string):
+                c = input_string[i]
+                start = i
+
                 # ignore whitespace
-                if input_string[i].isspace():
+                if c.isspace():
                     i += 1
                     continue
 
-                matched = False
+                # keyword or identifier or operator (and, not, or) state
+                elif c.isalpha() or c == '_':
+                    word = ""
+                    while i < len(input_string) and (input_string[i].isalnum() or input_string[i] == '_'):
+                        word += input_string[i]
+                        i += 1
 
-                # Keyword
-                for token_type, values in token_specification:
-                    if token_type == 'KEYWORD':
-                        for keyword in values:
-                            if input_string[i:i+len(keyword)] == keyword and (i+len(keyword) == len(input_string) or not input_string[i+len(keyword)].isalnum()):
-                                tokens.append((token_type, keyword))
-                                i += len(keyword)
-                                matched = True
-                                break
-                        if matched:
+                    if word in token_specification[TokenType.KEYWORD]:
+                        tokens.append(Token(TokenType.KEYWORD, word, start))
+                    elif word in token_specification[TokenType.OPERATOR]:
+                        tokens.append(Token(TokenType.OPERATOR, word, start))
+                    else:
+                        tokens.append(Token(TokenType.IDENTIFIER, word, start))
+
+                # operator (everything other than and, or, not) state
+                elif c in token_specification[TokenType.OPERATOR]:
+                    for op in sorted_operators:
+                        if input_string.startswith(op, i):
+                            tokens.append(Token(TokenType.OPERATOR, op, i))
+                            i += len(op)
                             break
 
-                # Operator
-                if not matched:
-                    for operator in token_specification[1][1]:
-                        if input_string[i:i+len(operator)] == operator:
-                            tokens.append(('OPERATOR', operator))
-                            i += len(operator)
-                            matched = True
-                            break
+                # symbol (separator, lpar and rpar) state
+                elif c in symbols:
+                    if c in token_specification[TokenType.SEPARATOR]:
+                        tokens.append(Token(TokenType.SEPARATOR, c, i))
+                    elif c in token_specification[TokenType.LPAR]:
+                        tokens.append(Token(TokenType.LPAR, c, i))
+                    else:
+                        tokens.append(Token(TokenType.RPAR, c, i))
+                    i += 1
 
-                # Symbol
-                if not matched:
-                    for token_type, values in token_specification[2:]:
-                        if input_string[i] in values:
-                            tokens.append((token_type, input_string[i]))
-                            i += 1
-                            matched = True
-                            break
-
-                # Integer
-                if not matched and input_string[i].isdigit():
+                # number state
+                elif c.isdigit():
                     num = ''
-                    while i < len(input_string) and (input_string[i].isdigit() or input_string[i] == '.'):
+                    seen_dot = False
+                    while i < len(input_string) and (input_string[i].isdigit() or
+                                                     (input_string[i] == '.' and not seen_dot)):
+                        if input_string[i] == '.':
+                            seen_dot = True
                         num += input_string[i]
                         i += 1
-                    tokens.append(('NUMBER', num))
-                    matched = True
+                    tokens.append(Token(TokenType.NUMBER, num, start))
 
-                # Id
-                if not matched and input_string[i].isalpha():
-                    identifier = ''
-                    while i < len(input_string) and (input_string[i].isalnum()):
-                        identifier += input_string[i]
-                        i += 1
-                    tokens.append(('IDENTIFIER', identifier))
-                    matched = True
-
-                # No found
-                if not matched:
-                    raise ValueError(f"Unrecognized character: {input_string[i]}")
-    
+                # error state
+                else:
+                    num = str(int(num) + 1)
+                    raise ValueError(f"Unrecognized character at line {num}, position {i}: {c}")
+    print("scanner end")
     return tokens
