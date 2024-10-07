@@ -1,13 +1,5 @@
 from enum import Enum, auto
 
-class State(Enum):
-    START = auto()
-    IDENTIFIER = auto()
-    NUMBER = auto()
-    OPERATOR = auto()
-    SYMBOL = auto()
-    ERROR = auto()
-
 class TokenType(Enum):
     KEYWORD = auto()
     OPERATOR = auto()
