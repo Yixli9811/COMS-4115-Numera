@@ -38,6 +38,26 @@ def scan(filename):
                     else:
                         tokens.append(Token(TokenType.IDENTIFIER, word, start))
 
+                # String literal state
+                elif c in token_specification[TokenType.Str_lit]:
+                    if c == '"':
+                        word = ''
+                        #tokens.append(Token(TokenType.Str_lit, '"', start))
+                        i += 1 
+                        start = i
+                        
+                        while i < len(input_string) and input_string[i] != '"':
+                            word += input_string[i]
+                            i += 1
+                        
+                        if i >= len(input_string) or input_string[i] != '"':
+                            raise ValueError(f"Unterminated string literal at line {line_num} position {start}")
+                        
+                        i += 1
+                        tokens.append(Token(TokenType.Str_lit, word, start))
+                        #tokens.append(Token(TokenType.Str_lit, '"', start))
+
+
                 # operator (everything other than and, or, not) state
                 elif c in token_specification[TokenType.OPERATOR]:
                     for op in sorted_operators:
