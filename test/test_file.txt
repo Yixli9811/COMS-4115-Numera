@@ -3,4 +3,3 @@ print(a);
 
 result = sqrt(25) + sin(0) - log(10);
 print(result);
-_while
