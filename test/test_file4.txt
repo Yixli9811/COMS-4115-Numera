@@ -1,0 +1,7 @@
+var var_1 = 10;
+var var_2 = 20;
+if var_1 < var_2 then
+     print(var_1);
+else
+     print(var_2);
+end
