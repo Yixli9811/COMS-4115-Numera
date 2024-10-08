@@ -1,0 +1,5 @@
+var a = (10 + 20) * 2;
+print(a);
+
+result = sqrt(25) + sin(0) - log(10);
+print(result);
