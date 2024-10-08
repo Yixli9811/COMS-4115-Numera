@@ -11,7 +11,8 @@ def scan(filename):
                 token_specification[TokenType.RPAR]
     
     with (open(filename, 'r', encoding='utf-8') as file):
-        for num, line in enumerate(file):
+        for line_num, line in enumerate(file):
+            line_num = str(int(line_num) + 1)
             input_string = line.strip()
             i = 0
             while i < len(input_string):
@@ -24,7 +25,7 @@ def scan(filename):
                     continue
 
                 # keyword or identifier or operator (and, not, or) state
-                elif c.isalpha() or c == '_':
+                elif c.isalpha():
                     word = ""
                     while i < len(input_string) and (input_string[i].isalnum() or input_string[i] == '_'):
                         word += input_string[i]
@@ -65,11 +66,18 @@ def scan(filename):
                             seen_dot = True
                         num += input_string[i]
                         i += 1
-                    tokens.append(Token(TokenType.NUMBER, num, start))
+
+                    # check for invalid identifier starting with a digit
+                    if i < len(input_string) and (input_string[i].isalpha() or input_string[i] == '_'):
+                        while i < len(input_string) and (input_string[i].isalnum() or input_string[i] == '_'):
+                            i += 1
+                        invalid_identifier = input_string[start:i]
+                        raise ValueError(f"Invalid identifier starting with digit: '{invalid_identifier}' "
+                                         f"at line {line_num} position {start}")
+                    tokens.append(Token(TokenType.NUMBER, line_num, start))
 
                 # error state
                 else:
-                    num = str(int(num) + 1)
-                    raise ValueError(f"Unrecognized character at line {num}, position {i}: {c}")
+                    raise ValueError(f"Unrecognized character at line {line_num}, position {i}: {c}")
     print("scanner end")
     return tokens
