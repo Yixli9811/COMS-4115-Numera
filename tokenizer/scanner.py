@@ -39,7 +39,7 @@ def scan(filename):
                         tokens.append(Token(TokenType.IDENTIFIER, word, start))
 
                 # String literal state
-                elif c in token_specification[TokenType.Str_lit]:
+                elif c in token_specification[TokenType.STRING]:
                     if c == '"':
                         word = ''
                         #tokens.append(Token(TokenType.Str_lit, '"', start))
@@ -54,7 +54,7 @@ def scan(filename):
                             raise ValueError(f"Unterminated string literal at line {line_num} position {start}")
                         
                         i += 1
-                        tokens.append(Token(TokenType.Str_lit, word, start))
+                        tokens.append(Token(TokenType.STRING, word, start))
                         #tokens.append(Token(TokenType.Str_lit, '"', start))
 
 
