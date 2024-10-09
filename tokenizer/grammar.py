@@ -8,6 +8,7 @@ class TokenType(Enum):
     RPAR = auto()
     IDENTIFIER = auto()
     NUMBER = auto()
+    STRING = auto()
 
 class Keyword(Enum):
     IF = "if"
@@ -49,10 +50,14 @@ class Parenthesis(Enum):
     LPAR = '('
     RPAR = ')'
 
+class String_literal(Enum):
+    STRING = '"'
+
 token_specification = {
     TokenType.KEYWORD: set([kw.value for kw in Keyword]),
     TokenType.OPERATOR: set([op.value for op in Operator]),
     TokenType.SEPARATOR: set([sep.value for sep in Separator]),
     TokenType.LPAR: {Parenthesis.LPAR.value},
-    TokenType.RPAR: {Parenthesis.RPAR.value}
+    TokenType.RPAR: {Parenthesis.RPAR.value},
+    TokenType.STRING: {String_literal.STRING.value}
 }

@@ -1,0 +1,3 @@
+var result = 5 + 8;
+print("result is " result);
+print("test string literal work? ^#$%#$^$#%^");
