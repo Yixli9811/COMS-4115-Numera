@@ -7,6 +7,7 @@
 - Numbers = `[0-9]* | [0-9]+.[0-9]*`
 - LPAR = `(`, RPAR = `)`
 - Separator = `; | ,`
+- String_literal = ` " `
 
 Team:
 * Yixuan Li (yl3803)
