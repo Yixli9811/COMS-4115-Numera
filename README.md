@@ -42,7 +42,8 @@ sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] 
 symbols = token_specification[TokenType.SEPARATOR] | token_specification[TokenType.LPAR] | \
           token_specification[TokenType.RPAR]
 ```
-`sorted()` is used to sort non-alphabetic operators in descending order by length to ensure that longer operators are matched first, avoiding ambiguity.   
+`sorted()` is used to sort non-alphabetic operators in descending order by length to ensure that longer operators are matched first, avoiding ambiguity.     
+
 2. Keywords, Identifiers, and Logical Operators: Concatenate characters to form words and check if they are keywords or identifiers.
 ```
 elif c.isalpha():
