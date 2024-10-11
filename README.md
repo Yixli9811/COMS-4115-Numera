@@ -27,13 +27,13 @@ cd COMS-4115-Numera
 
 2. Build a Docker image
 ```
-docker build -t [your_name] .
+docker build -t coms-4115-numera .
 ```
 3. Run the Docker container
     we provide 5 files to test our program and one error file to show error report  
     (test_file.txt,test_file2.txt,test_file3.txt,test_file4.txt,test_file5.txt) (test_file_error.txt)
 ```
-docker run -p 4000:80 [your_name] main.py test/test_file.txt
+docker run -p 4000:80 coms-4115-numera python3 main.py test/test_file.txt
 ```
 
 ## Lexer code description
