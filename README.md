@@ -7,6 +7,7 @@
 - Numbers = `Integer | Float` Integer = `0 | [1-9][0-9]*`  Float = `[0-9]+\.[0-9]* | \.[0-9]+`
 - LPAR = `(`, RPAR = `)`
 - Separator = `; | ,`
+- String = `"[^"]"` (accept any chactacter except " within the double quote)
 - Whitespace = `[\t\n\r]+`
 
 Team:
@@ -15,8 +16,27 @@ Team:
 
 ## Lexer Usage Guide
 
-* we have five files in the test folder, use `python3 main.py test/test_file.txt`
+prerequisite 
+    - Docker must already be installed on the system.
 
+1. clone repository
+```
+git clone https://github.com/Yixli9811/COMS-4115-Numera.git 
+cd COMS-4115-Numera
+```
+
+2. Build a Docker image
+```
+docker build -t coms-4115-numera .
+```
+3. Run the Docker container
+    we provide 5 files to test our program and one error file to show error report  
+    (test_file.txt,test_file2.txt,test_file3.txt,test_file4.txt,test_file5.txt) (test_file_error.txt)
+```
+docker run -p 4000:80 coms-4115-numera python3 main.py test/test_file.txt
+```
+
+## Lexer code description
 1. Define Operators and Symbols  
 ```
 sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] if not op.isalpha()],
@@ -24,7 +44,8 @@ sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] 
 symbols = token_specification[TokenType.SEPARATOR] | token_specification[TokenType.LPAR] | \
           token_specification[TokenType.RPAR]
 ```
-`sorted()` is used to sort non-alphabetic operators in descending order by length to ensure that longer operators are matched first, avoiding ambiguity.   
+`sorted()` is used to sort non-alphabetic operators in descending order by length to ensure that longer operators are matched first, avoiding ambiguity.     
+
 2. Keywords, Identifiers, and Logical Operators: Concatenate characters to form words and check if they are keywords or identifiers.
 ```
 elif c.isalpha():
