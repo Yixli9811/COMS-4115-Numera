@@ -27,7 +27,7 @@ git clone https://github.com/Yixli9811/COMS-4115-Numera.git
 ```
 docker build -t [your_name] .
 ```
-3. Run the Docker container
+3. Run the Docker container     
     we provide 5 files to test our program and one error file to show error report  
     (test_file.txt,test_file2.txt,test_file3.txt,test_file4.txt,test_file5.txt) (test_file_error.txt)
 ```
