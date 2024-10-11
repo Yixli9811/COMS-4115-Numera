@@ -94,7 +94,7 @@ def scan(filename):
                         invalid_identifier = input_string[start:i]
                         raise ValueError(f"Invalid identifier starting with digit: '{invalid_identifier}' "
                                          f"at line {line_num} position {start}")
-                    tokens.append(Token(TokenType.NUMBER, line_num, start))
+                    tokens.append(Token(TokenType.NUMBER, num, start))
 
                 # error state
                 else:
