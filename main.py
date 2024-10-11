@@ -3,7 +3,7 @@ import tokenizer.scanner as scanner
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python3 scanner.py <input_file>")
+        print("Usage: python3 main.py <input_file>")
         sys.exit(1)
 
     file = sys.argv[1]

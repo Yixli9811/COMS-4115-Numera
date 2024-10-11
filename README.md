@@ -15,8 +15,26 @@ Team:
 
 ## Lexer Usage Guide
 
-* we have five files in the test folder, use `python3 main.py test/test_file.txt`
+prerequisite 
+    - Docker must already be installed on the system.
 
+1. clone repository
+```
+git clone https://github.com/Yixli9811/COMS-4115-Numera.git 
+```
+
+2. Build a Docker image
+```
+docker build -t [your_name] .
+```
+3. Run the Docker container
+    we provide 5 files to test our program and one error file to show error report  
+    (test_file.txt,test_file2.txt,test_file3.txt,test_file4.txt,test_file5.txt) (test_file_error.txt)
+```
+docker run -p 4000:80 [your_name] main.py test/test_file.txt
+```
+
+## Lexer code description
 1. Define Operators and Symbols  
 ```
 sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] if not op.isalpha()],
