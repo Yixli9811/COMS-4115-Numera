@@ -7,6 +7,7 @@
 - Numbers = `Integer | Float` Integer = `0 | [1-9][0-9]*`  Float = `[0-9]+\.[0-9]* | \.[0-9]+`
 - LPAR = `(`, RPAR = `)`
 - Separator = `; | ,`
+- String = `"[^"]"` (accept any chactacter except " within the double quote)
 - Whitespace = `[\t\n\r]+`
 
 Team:
@@ -15,23 +16,26 @@ Team:
 
 ## Lexer Usage Guide
 
-prerequisite 
+Prerequisite 
     - Docker must already be installed on the system.
 
 1. clone repository
 ```
 git clone https://github.com/Yixli9811/COMS-4115-Numera.git 
+cd COMS-4115-Numera
 ```
 
 2. Build a Docker image
 ```
-docker build -t [your_name] .
+docker build -t coms-4115-numera .
 ```
-3. Run the Docker container
+- make sure docker daemon is running (docker desktop is open)
+
+3. Run the Docker container    
     we provide 5 files to test our program and one error file to show error report  
     (test_file.txt,test_file2.txt,test_file3.txt,test_file4.txt,test_file5.txt) (test_file_error.txt)
 ```
-docker run -p 4000:80 [your_name] main.py test/test_file.txt
+docker run -p 4000:80 coms-4115-numera python3 main.py test/test_file.txt
 ```
 
 ## Lexer code description
