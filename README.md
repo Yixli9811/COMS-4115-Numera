@@ -12,26 +12,30 @@
 
 ## Context-free Grammar (CFG)
 
-- <procedure> ::= procedure main is <decl-seq> begin <stmt-seq> end
-              | procedure main is begin <stmt-seq> end
-- <decl-seq> ::= <decl> | <decl><decl-seq>
-- <stmt-seq> ::= <stmt> | <stmt><stmt-seq>
-- <decl> ::= <decl-var>
-- <parameters> ::= id
-- <decl-var> ::= var id
-- <stmt> ::= <assign> | <if> | <loop> | <print> | <decl> | <call>
-- <assign> ::= id = <expr>
-- <print> ::= print(<expr>) | print(<String>)
-- <if> ::= if <cond> then <stmt-seq> end
-       | if <cond> then <stmt-seq> else <stmt-seq> end
-- <loop> ::= while <cond> do <stmt-seq> end
-- <cond> ::= <cmpr> | not <cond> | <cmpr> or <cond> | <cmpr> and <cond>
-- <cmpr> ::= <expr> == <expr> | <expr> != <expr> | <expr> < <expr>
-         | <expr> > <expr> | <expr> <= <expr> | <expr> >= <expr>
-- <expr> ::= <term> | <term> + <expr> | <term> - <expr>
-- <term> ::= <factor> | <factor> * <term> | <factor> / <term>
-- <factor> ::= id | const | ( <expr> ) | in ( )
-- <string> ::= `"[^"]"`
+- `<procedure>` ::= procedure main is `<decl-seq>` begin `<stmt-seq>` end
+              | procedure main is begin `<stmt-seq>` end
+- `<decl-seq>` ::= `<decl>` | `<decl><decl-seq>`
+              | `<function>` | `<function><decl-seq>`
+- `<stmt-seq>` ::= `<stmt>` | `<stmt><stmt-seq>`
+- `<decl>` ::= `<decl-var>`
+- `<function>` ::= procedure ID `<parameters>` is `<stmt-seq>` end
+- `<parameters>` ::= id
+- `<decl-var>` ::= var id
+- `<stmt>` ::= `<assign>` | `<if>` | `<loop>` | `<print>` | `<decl>` | `<call>`
+- `<call>` ::= begin ID(`<parameters>`)
+- `<assign>` ::= id = `<expr>`
+- `<print>` ::= print(`<expr>`)
+- `<if>` ::= if `<cond>` then `<stmt-seq>` end
+       | if `<cond>` then `<stmt-seq>` else `<stmt-seq>` end
+- `<loop>` ::= while `<cond>` do `<stmt-seq>` end
+- `<cond>` ::= `<cmpr>` | not `<cond>` | `<cmpr>` or `<cond>` | `<cmpr>` and `<cond>`
+- `<cmpr>` ::= `<expr>` == `<expr>` | `<expr>` != `<expr>` | `<expr>` < `<expr>`
+         | `<expr>` > `<expr>` | `<expr>` <= `<expr>` | `<expr>` >= `<expr>`
+- `<expr>` ::= `<term>` | `<term>` + `<expr>` | `<term>` - `<expr>`
+- `<term>` ::= `<factor>` | `<factor>` * `<term>` | `<factor>` / `<term>`
+- `<factor>` ::= id | const | ( `<expr>` ) | in ( )
+- `<string>` ::= `"[^"]"`
+
 
 
 
