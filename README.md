@@ -15,14 +15,11 @@
 - `<procedure>` ::= procedure main is `<decl-seq>` begin `<stmt-seq>` end
               | procedure main is begin `<stmt-seq>` end
 - `<decl-seq>` ::= `<decl>` | `<decl><decl-seq>`
-              | `<function>` | `<function><decl-seq>`
 - `<stmt-seq>` ::= `<stmt>` | `<stmt><stmt-seq>`
 - `<decl>` ::= `<decl-var>`
-- `<function>` ::= procedure ID `<parameters>` is `<stmt-seq>` end
 - `<parameters>` ::= id
 - `<decl-var>` ::= var id
 - `<stmt>` ::= `<assign>` | `<if>` | `<loop>` | `<print>` | `<decl>` | `<call>`
-- `<call>` ::= begin ID(`<parameters>`)
 - `<assign>` ::= id = `<expr>`
 - `<print>` ::= print(`<expr>`)
 - `<if>` ::= if `<cond>` then `<stmt-seq>` end
@@ -35,7 +32,6 @@
 - `<term>` ::= `<factor>` | `<factor>` * `<term>` | `<factor>` / `<term>`
 - `<factor>` ::= id | const | ( `<expr>` ) | in ( )
 - `<string>` ::= `"[^"]"`
-
 
 
 
