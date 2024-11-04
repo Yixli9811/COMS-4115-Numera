@@ -1,5 +1,9 @@
-var a = (10 + 20) * 2;
-print(a);
-
-result = sqrt(25) + sin(0) - log(10);
-print(result);
+procedure main is
+begin
+    var x;
+	if 5 == 5 then
+		print(3);
+	else
+		print(7);
+	end
+end

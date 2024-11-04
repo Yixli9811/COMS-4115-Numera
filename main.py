@@ -1,5 +1,6 @@
 import sys
 import tokenizer.scanner as scanner
+from parser.parser import Parser
 
 def main():
     if len(sys.argv) != 2:
@@ -16,8 +17,10 @@ def main():
         sys.exit(1)
 
     result = scanner.scan(file)
-    for token in result:
-        print(token)
+    parser = Parser(result)
+    parser.parse()
+    # for token in result:
+    #     print(token)
 
 if __name__ == "__main__":
     main()

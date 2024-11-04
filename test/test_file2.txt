@@ -1,12 +1,6 @@
 procedure main is
-     procedure function (arg1, arg2) is
-        var a;
-        if arg1 >= 9 and arg2 == 20.2 then
-            a = in();
-        end
-     end
 begin
     var x = 10;
-    var y = sin(x);
-    print(y);
+    var y = 12;
+    print(10);
 end
