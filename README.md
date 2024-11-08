@@ -5,6 +5,8 @@
 Please refer to `tokenizer/README.md` for the regular expression of our language and 
 `parser/README.md` for the CFG grammar.
 
+Video Introduction - Youtube link: https://youtu.be/XvDBSk59CS8
+
 ## Usage Guide
 
 prerequisite 
