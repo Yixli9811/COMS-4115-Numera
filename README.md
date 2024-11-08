@@ -2,7 +2,10 @@
 * Yixuan Li (yl3803)
 * Meng Gao (mg4774)
 
-## Lexer Usage Guide
+Please refer to `tokenizer/README.md` for the regular expression of our language and 
+`parser/README.md` for the CFG grammar.
+
+## Usage Guide
 
 prerequisite 
     - Docker must already be installed on the system.

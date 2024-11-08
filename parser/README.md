@@ -1,6 +1,47 @@
-# Parser Class Code Explanation
+## Context-free Grammar (CFG)
 
-The purpose of the `Parser` class is to parse a series of tokens according to a specific grammar, generating meaningful outputs or raising errors if the tokens do not match the expected structure. Below is an explanation of each method:
+```ebnf
+# Main Program
+<procedure> ::= procedure main is <decl-seq> begin <stmt-seq> end
+              | procedure main is begin <stmt-seq> end
+              
+# Declarations
+<decl-seq> ::= <decl> <decl-seq> | ε
+<decl> ::= <decl-var>
+<decl-var> ::= var id ; | var id = <expr> ;
+
+# Statements
+<stmt-seq> ::= <stmt> <stmt-seq> | ε
+<stmt> ::= <assign> | <if> | <loop> | <print> | <decl>
+<assign> ::= id = <expr> ;
+<print> ::= print ( <expr> ) ;
+<if> ::= if <cond> then <stmt-seq> end
+       | if <cond> then <stmt-seq> else <stmt-seq> end
+<loop> ::= while <cond> do <stmt-seq> end
+
+# Conditions and Expressions
+<cond> ::= not <cond> | <cmpr> | <cmpr> and <cond> | <cmpr> or <cond>
+<cmpr> ::= <expr> == <expr> | <expr> != <expr> | <expr> < <expr> | <expr> > <expr>
+         | <expr> <= <expr> | <expr> >= <expr>
+<expr> ::= <term> | <term> + <expr> | <term> - <expr>
+<term> ::= <factor> | <factor> * <term> | <factor> / <term>
+<factor> ::= id | numbers | string | (<expr>) | in()
+```
+
+## Main Parsing Process
+The parsing process follows this sequence:
+
+1. Validate program structure (`procedure main is`)
+2. Parse declarations (`decl_seq`)
+3. Process `begin` keyword
+4. Parse statement sequence (`stmt_seq`)
+5. Validate program end
+
+## Parser Class Code Explanation
+
+The purpose of the `Parser` class is to parse a series of tokens according to a specific grammar, 
+generating meaningful outputs or raising errors if the tokens do not match the expected structure. 
+Below is an explanation of each method:
 
 ### 1. `__init__`
 ```python
@@ -25,17 +66,16 @@ This method returns the current token based on the `position`. If `position` exc
 
 ---
 
-### 3. `next_toekn` (should be `next_token`)
+### 3. `next_token`
 ```python
-def next_toekn(self):
+def next_token(self):
     self.position += 1
     if self.position < len(self.tokens):
         return self.tokens[self.position]
     return None
 ```
 **Explanation**:  
-This method moves the parsing position forward by one and returns the next token. If there are no more tokens, it returns `None`.  
-**Note**: There is a typo in the function name; it should be `next_token`.
+This method moves the parsing position forward by one and returns the next token. If there are no more tokens, it returns `None`.
 
 ---
 
@@ -48,7 +88,7 @@ def expect_token(self, tokenName=None):
     
     if tokenName is not None and token.value != tokenName:
         raise ParserError(f"Expected token value '{tokenName}', got '{token.value}'")
-    self.next_toekn()
+    self.next_token()
 ```
 **Explanation**:  
 This method checks if the current token matches the expected value. If it doesn't match or if it is `None`, it raises a `ParserError`. If the token matches, it moves to the next token.
@@ -111,7 +151,9 @@ def parse(self):
     print("parse end")
 ```
 **Explanation**:  
-This method is the main entry point for parsing. It expects specific tokens in a defined sequence (`procedure`, `main`, `is`, etc.). It calls other methods like `decl_seq` and `stmt_seq` to parse declarations and statements. If any token is not as expected, it raises a `ParserError`.
+This method is the main entry point for parsing. It expects specific tokens in a defined sequence (`procedure`, `main`, `is`, etc.). 
+It calls other methods like `decl_seq` and `stmt_seq` to parse declarations and statements. 
+If any token is not as expected, it raises a `ParserError`.
 
 ---
 
@@ -156,7 +198,7 @@ def decl_var(self):
     var_name = self.current_token().value
     if not var_name.isidentifier():
         raise ParserError(f"Invalid identifier '{var_name}' after 'var'")
-    self.next_toekn()
+    self.next_token()
 
     if self.current_token().value == "=":
         self.expect_token("=")
@@ -202,7 +244,7 @@ def assign(self):
     var_name = self.current_token().value
     if not var_name.isidentifier():
         raise ParserError(f"Invalid identifier '{var_name}' in assignment")
-    self.next_toekn()
+    self.next_token()
     self.expect_token("=")
     expr = self.expr()
     self.expect_token(";")
@@ -277,7 +319,7 @@ def cond(self):
     
     while self.match_token("or") or self.match_token("and"):
         op = self.current_token().value
-        self.next_toekn()
+        self.next_token()
         right = self.cmpr()
         left = f"({left} {op} {right})"
     
@@ -296,7 +338,7 @@ def cmpr(self):
        self.match_token("<") or self.match_token(">") or \
        self.match_token("<=") or self.match_token(">="):
         op = self.current_token().value
-        self.next_toekn()
+        self.next_token()
         right = self.expr()
         return f"{left} {op} {right}"
     return left
@@ -312,7 +354,7 @@ def expr(self):
     left = self.term()
     while self.match_token("+") or self.match_token("-"):
         op = self.current_token().value
-        self.next_toekn()
+        self.next_token()
         right = self.term()
         left = f"({left} {op} {right})"
     return left
@@ -328,7 +370,7 @@ def term(self):
     left = self.factor()
     while self.match_token("*") or self.match_token("/"):
         op = self.current_token().value
-        self.next_toekn()
+        self.next_token()
         right = self.factor()
         left = f"({left} {op} {right})"
     return left
@@ -354,11 +396,11 @@ def factor(self):
         return "in()"
     elif token.value.isdigit() or (token.value.startswith('"') and token.value.endswith('"')):
         value = token.value
-        self.next_toekn()
+        self.next_token()
         return value
     else:
         identifier = token.value
-        self.next_toekn()
+        self.next_token()
         return identifier
 ```
 **Explanation**:  
