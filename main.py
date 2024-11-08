@@ -18,9 +18,8 @@ def main():
 
     result = scanner.scan(file)
     parser = Parser(result)
-    parser.parse()
-    # for token in result:
-    #     print(token)
+    ast = parser.parse()
+    parser.print_ast(ast)
 
 if __name__ == "__main__":
     main()
