@@ -17,6 +17,8 @@ def main():
         sys.exit(1)
 
     result = scanner.scan(file)
+    for token in result:
+        print(token)
     parser = Parser(result)
     ast = parser.parse()
     parser.print_ast(ast)
