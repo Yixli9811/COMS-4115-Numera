@@ -2,5 +2,6 @@ procedure main is
 begin
     var x;
 	x = in();
-	print(x);
+	print("I like coding");
+	print(2);
 end
