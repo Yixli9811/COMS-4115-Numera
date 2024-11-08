@@ -1,6 +1,6 @@
 from tokenizer.grammar import *
+from .ast_node import *
 from .parser_error import ParserError
-
 
 class Parser:
     def __init__(self, tokens):
@@ -12,7 +12,7 @@ class Parser:
             return self.tokens[self.position]
         return None
     
-    def next_toekn(self):
+    def next_token(self):
         self.position += 1
         if self.position < len(self.tokens):
             return self.tokens[self.position]
@@ -22,12 +22,10 @@ class Parser:
         token = self.current_token()
         if token is None:
             raise ParserError(f"Unexpected end of input, expected '{tokenName}'")
-    
-        #print(f"Expecting token: '{tokenName}', got: {repr(token.value)}")
-        
+
         if tokenName is not None and token.value != tokenName:
-            raise ParserError(f"Expected token value '{tokenName}', got '{token.value}'")
-        self.next_toekn()
+            raise ParserError(f"Expected token '{tokenName}', got '{token.value}' on line {token.line_num}")
+        self.next_token()
 
     def match_token(self, tokenName=None):
         token = self.current_token()
@@ -42,93 +40,92 @@ class Parser:
         if self.position + 1 < len(self.tokens):
             return self.tokens[self.position + 1]
         return None
-    
-
-
-
-
 
     def parse(self):
         print("parse start...")
         self.expect_token("procedure")
         if not self.match_token("main"):
-            raise ParserError(f"Expected 'main' after 'procedure', got '{self.current_token().value}'")
+            raise ParserError(f"Expected 'main' after 'procedure', got '{self.current_token().value}' on line {self.current_token().line_num}")
         self.expect_token("main")
         self.expect_token("is")
 
-        print("procedure main is")
-
-        self.decl_seq()
+        declarations = self.decl_seq()
 
         self.expect_token("begin")
-        print("begin")
-
-        self.stmt_seq()
-
+        statements = self.stmt_seq()
         self.expect_token("end")
-        print("end")
 
         if self.current_token() is not None:
-            raise ParserError(f"Unexpected token '{self.current_token().value}' after 'end'")
+            raise ParserError(f"Unexpected token '{self.current_token().value}' after 'end' on line {self.current_token().line_num}")
         
         print("parse end")
+        return Program(declarations=declarations, statements=statements)
     
     def decl_seq(self):
+        declarations = []
         while self.match_token("var"):
-            self.decl()
+            declarations.append(self.decl())
+        return declarations
     
     def decl(self):
-        self.decl_var()
-
-    def stmt_seq(self):
-        while self.current_token() is not None and not self.match_token("end") and not self.match_token("else"):
-            self.stmt()
+        return self.decl_var()
 
     def decl_var(self):
         self.expect_token("var")
-        if self.current_token() is None:
+        token = self.current_token()
+        if token is None:
             raise ParserError("Expected identifier after 'var', but got nothing")
-        var_name = self.current_token().value
+        var_name = token.value
         if not var_name.isidentifier():
             raise ParserError(f"Invalid identifier '{var_name}' after 'var'")
-        self.next_toekn()
+        self.next_token()
 
-        if self.current_token().value == "=":
+        initial_value = None
+        if self.match_token("="):
             self.expect_token("=")
-            expr = self.expr()
+            initial_value = self.expr()
             self.expect_token(";")
-            print(f"var {var_name} = {expr};")
         else:
             self.expect_token(";")
-            print(f"var {var_name};")
+        return Declaration(name=var_name, initial_value=initial_value)
+
+    def stmt_seq(self):
+        statements = []
+        while self.current_token() is not None and not self.match_token("end") and not self.match_token("else"):
+            statements.append(self.stmt())
+        return statements
 
     def stmt(self):
         token = self.current_token()
-        #print(f"Current statement token: {token}")
+        if token is None:
+            raise ParserError("Unexpected end of input in statement")
+
+        token = self.current_token()
         if token.value == "var":
-            self.decl()
+            return self.decl()
         elif token.value == "print":
-            self.print_stmt()
+            return self.print_stmt()
         elif token.value == "if":
-            self.if_stmt()
+            return self.if_stmt()
         elif token.value == "while":
-            self.loop()
+            return self.loop()
         elif token.value.isidentifier():
             next_token = self.peek_next_token()
             if next_token and next_token.value == "=":
-                self.assign()
+                return self.assign()
         else:
-            raise ParserError(f"Unexpected token '{token.value}' in statement")
+            raise ParserError(f"Unexpected token '{token.value}' in statement on line {token.line_num}")
 
     def assign(self):
         var_name = self.current_token().value
         if not var_name.isidentifier():
             raise ParserError(f"Invalid identifier '{var_name}' in assignment")
-        self.next_toekn()
+        target = Identifier(name=var_name)
+        self.next_token()
         self.expect_token("=")
         expr = self.expr()
         self.expect_token(";")
-        print(f"{var_name} = {expr};")
+        return AssignmentStatement(target=target, value=expr)
 
     def print_stmt(self):
         self.expect_token("print")
@@ -136,44 +133,43 @@ class Parser:
         expr = self.expr()
         self.expect_token(")")
         self.expect_token(";")
-        print(f"print({expr})")
+        return PrintStatement(expression=expr)
 
     def if_stmt(self):
         self.expect_token("if")
-        cond = self.cond()
+        condition = self.cond()
         self.expect_token("then")
-        print(f"if {cond} then")
-        self.stmt_seq()
+        then_block = self.stmt_seq()
+        else_block = None
+
         if self.match_token("else"):
             self.expect_token("else")
-            print("else")
-            self.stmt_seq()
+            else_block = self.stmt_seq()
+
         self.expect_token("end")
-        print("end")
+        return IfStatement(condition=condition, then_block=then_block, else_block=else_block)
 
     def loop(self):
         self.expect_token("while")
-        cond = self.cond()
+        condition = self.cond()
         self.expect_token("do")
-        print(f"while {cond} do")
-
-        self.stmt_seq()
+        body = self.stmt_seq()
         self.expect_token("end")
-        print("end")
+        return WhileStatement(condition=condition, body=body)
 
     def cond(self):
         if self.match_token("not"):
             self.expect_token("not")
             cond_expr = self.cond() 
-            return f"not ({cond_expr})"
+            return UnaryOperation(operator="not", operand=cond_expr)
         
         left = self.cmpr()
         
         while self.match_token("or") or self.match_token("and"):
             op = self.current_token().value
-            self.next_toekn()
+            self.next_token()
             right = self.cmpr()
-            left = f"({left} {op} {right})"
+            left = BinaryOperation(left=left, operator=op, right=right)
         
         return left
 
@@ -183,9 +179,9 @@ class Parser:
            self.match_token("<") or self.match_token(">") or \
            self.match_token("<=") or self.match_token(">="):
             op = self.current_token().value
-            self.next_toekn()
+            self.next_token()
             right = self.expr()
-            return f"{left} {op} {right}"
+            return BinaryOperation(left=left, operator=op, right=right)
         return left
     
 
@@ -193,9 +189,9 @@ class Parser:
         left = self.term()
         while self.match_token("+") or self.match_token("-"):
             op = self.current_token().value
-            self.next_toekn()
+            self.next_token()
             right = self.term()
-            left = f"({left} {op} {right})"
+            left = BinaryOperation(left=left, operator=op, right=right)
         return left
     
 
@@ -203,9 +199,9 @@ class Parser:
         left = self.factor()
         while self.match_token("*") or self.match_token("/"):
             op = self.current_token().value
-            self.next_toekn()
+            self.next_token()
             right = self.factor()
-            left = f"({left} {op} {right})"
+            left = BinaryOperation(left=left, operator=op, right=right)
         return left
     
 
@@ -215,17 +211,70 @@ class Parser:
             self.expect_token("(")
             expr = self.expr()
             self.expect_token(")")
-            return f"({expr})"
+            return expr
         elif token.value == "in":
             self.expect_token("in")
             self.expect_token("(")
             self.expect_token(")")
-            return "in()"
-        elif token.value.isdigit() or (token.value.startswith('"') and token.value.endswith('"')):
-            value = token.value
-            self.next_toekn()
-            return value
+            return Input()
+        elif token.value.isdigit():
+            value = int(token.value)
+            self.next_token()
+            return Constant(value=value)
+        elif token.value.startswith('"') and token.value.endswith('"'):
+            value = token.value[1:-1]  # Remove quotes
+            self.next_token()
+            return Constant(value=value)
         else:
             identifier = token.value
-            self.next_toekn()
-            return identifier
+            self.next_token()
+            return Identifier(name=identifier)
+
+    def print_ast(self, node, level=0, is_last=True, prefix=""):
+        if node is None:
+            return
+
+        branch = "└── " if is_last else "├── "
+        print(f"{prefix}{branch}{node.__class__.__name__}", end="")
+
+        if isinstance(node, Identifier):
+            print(f" ({node.name})")
+        elif isinstance(node, Constant):
+            print(f" ({node.value})")
+        elif isinstance(node, Declaration):
+            print(f" ({node.name})")
+        elif isinstance(node, AssignmentStatement):
+            print(f" ({node.target})")
+        else:
+            print()
+
+        # prepare the prefix for children
+        new_prefix = prefix + ("    " if is_last else "│   ")
+
+        children = []
+        if isinstance(node, Program):
+            children.extend(node.declarations)
+            children.extend(node.statements)
+        elif isinstance(node, Declaration) and node.initial_value:
+            children.append(node.initial_value)
+        elif isinstance(node, AssignmentStatement):
+            children.append(node.value)
+        elif isinstance(node, PrintStatement):
+            children.append(node.expression)
+        elif isinstance(node, IfStatement):
+            children.append(node.condition)
+            children.extend(node.then_block)
+            if node.else_block:
+                children.extend(node.else_block)
+        elif isinstance(node, WhileStatement):
+            children.append(node.condition)
+            children.extend(node.body)
+        elif isinstance(node, BinaryOperation):
+            children.append(node.left)
+            children.append(node.right)
+        elif isinstance(node, UnaryOperation):
+            children.append(node.operand)
+
+        # print each child
+        for i, child in enumerate(children):
+            self.print_ast(child, level + 1, i == len(children) - 1, new_prefix)
