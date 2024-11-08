@@ -32,11 +32,11 @@ def scan(filename):
                         i += 1
 
                     if word in token_specification[TokenType.KEYWORD]:
-                        tokens.append(Token(TokenType.KEYWORD, word, start))
+                        tokens.append(Token(TokenType.KEYWORD, word, line_num))
                     elif word in token_specification[TokenType.OPERATOR]:
-                        tokens.append(Token(TokenType.OPERATOR, word, start))
+                        tokens.append(Token(TokenType.OPERATOR, word, line_num))
                     else:
-                        tokens.append(Token(TokenType.IDENTIFIER, word, start))
+                        tokens.append(Token(TokenType.IDENTIFIER, word, line_num))
 
                 # String literal state
                 elif c in token_specification[TokenType.STRING]:
@@ -54,7 +54,7 @@ def scan(filename):
                             raise ValueError(f"Unterminated string literal at line {line_num} position {start}")
                         
                         i += 1
-                        tokens.append(Token(TokenType.STRING, word, start))
+                        tokens.append(Token(TokenType.STRING, word, line_num))
                         #tokens.append(Token(TokenType.Str_lit, '"', start))
 
 
@@ -62,18 +62,18 @@ def scan(filename):
                 elif c in token_specification[TokenType.OPERATOR]:
                     for op in sorted_operators:
                         if input_string.startswith(op, i):
-                            tokens.append(Token(TokenType.OPERATOR, op, i))
+                            tokens.append(Token(TokenType.OPERATOR, op, line_num))
                             i += len(op)
                             break
 
                 # symbol (separator, lpar and rpar) state
                 elif c in symbols:
                     if c in token_specification[TokenType.SEPARATOR]:
-                        tokens.append(Token(TokenType.SEPARATOR, c, i))
+                        tokens.append(Token(TokenType.SEPARATOR, c, line_num))
                     elif c in token_specification[TokenType.LPAR]:
-                        tokens.append(Token(TokenType.LPAR, c, i))
+                        tokens.append(Token(TokenType.LPAR, c, line_num))
                     else:
-                        tokens.append(Token(TokenType.RPAR, c, i))
+                        tokens.append(Token(TokenType.RPAR, c, line_num))
                     i += 1
 
                 # number state
@@ -94,7 +94,7 @@ def scan(filename):
                         invalid_identifier = input_string[start:i]
                         raise ValueError(f"Invalid identifier starting with digit: '{invalid_identifier}' "
                                          f"at line {line_num} position {start}")
-                    tokens.append(Token(TokenType.NUMBER, num, start))
+                    tokens.append(Token(TokenType.NUMBER, num, line_num))
 
                 # error state
                 else:

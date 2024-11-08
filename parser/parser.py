@@ -21,10 +21,10 @@ class Parser:
     def expect_token(self, tokenName=None):
         token = self.current_token()
         if token is None:
-            raise ParserError(f"Unexpected end of input, expected '{tokenName}' at position {self.position}")
+            raise ParserError(f"Unexpected end of input, expected '{tokenName}'")
 
         if tokenName is not None and token.value != tokenName:
-            raise ParserError(f"Expected token '{tokenName}', got '{token.value}' at position {self.position}")
+            raise ParserError(f"Expected token '{tokenName}', got '{token.value}' on line {token.line_num}")
         self.next_token()
 
     def match_token(self, tokenName=None):
@@ -45,7 +45,7 @@ class Parser:
         print("parse start...")
         self.expect_token("procedure")
         if not self.match_token("main"):
-            raise ParserError(f"Expected 'main' after 'procedure', got '{self.current_token().value}'")
+            raise ParserError(f"Expected 'main' after 'procedure', got '{self.current_token().value}' on line {self.current_token().line_num}")
         self.expect_token("main")
         self.expect_token("is")
 
@@ -56,7 +56,7 @@ class Parser:
         self.expect_token("end")
 
         if self.current_token() is not None:
-            raise ParserError(f"Unexpected token '{self.current_token().value}' after 'end'")
+            raise ParserError(f"Unexpected token '{self.current_token().value}' after 'end' on line {self.current_token().line_num}")
         
         print("parse end")
         return Program(declarations=declarations, statements=statements)
@@ -77,7 +77,7 @@ class Parser:
             raise ParserError("Expected identifier after 'var', but got nothing")
         var_name = token.value
         if not var_name.isidentifier():
-            raise ParserError(f"Invalid identifier '{var_name}' after 'var' at position {self.position}")
+            raise ParserError(f"Invalid identifier '{var_name}' after 'var'")
         self.next_token()
 
         initial_value = None
@@ -114,7 +114,7 @@ class Parser:
             if next_token and next_token.value == "=":
                 return self.assign()
         else:
-            raise ParserError(f"Unexpected token '{token.value}' in statement at position {self.position}")
+            raise ParserError(f"Unexpected token '{token.value}' in statement on line {token.line_num}")
 
     def assign(self):
         var_name = self.current_token().value
@@ -234,11 +234,9 @@ class Parser:
         if node is None:
             return
 
-            # Print current node
         branch = "└── " if is_last else "├── "
         print(f"{prefix}{branch}{node.__class__.__name__}", end="")
 
-        # Print node specific information
         if isinstance(node, Identifier):
             print(f" ({node.name})")
         elif isinstance(node, Constant):
@@ -250,10 +248,9 @@ class Parser:
         else:
             print()
 
-        # Prepare the prefix for children
+        # prepare the prefix for children
         new_prefix = prefix + ("    " if is_last else "│   ")
 
-        # Get child nodes based on node type
         children = []
         if isinstance(node, Program):
             children.extend(node.declarations)
@@ -278,6 +275,6 @@ class Parser:
         elif isinstance(node, UnaryOperation):
             children.append(node.operand)
 
-        # Print each child
+        # print each child
         for i, child in enumerate(children):
             self.print_ast(child, level + 1, i == len(children) - 1, new_prefix)
