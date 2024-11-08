@@ -1,3 +1,17 @@
-var result = 5 + 8;
-print("result is " result);
-print("test string literal work? ^#$%#$^$#%^");
+procedure main is
+	var x = 10;
+begin
+	if x == 10 then
+		x = 2;
+		if x == 2 then
+			x = 3;
+			if x == 3 then
+				x = 4;
+				print(x);
+			end
+			print(x);
+		end
+		print(x);
+	end
+	print(x);
+end

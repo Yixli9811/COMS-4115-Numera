@@ -1,5 +1,9 @@
-var 12x = 12
-
-if x == 5:
-     print(x);
-end@
+procedure main is
+begin
+    var x;
+	if 5 == 5 do
+		print(3);
+	else
+		print(7);
+	end
+endgit a
