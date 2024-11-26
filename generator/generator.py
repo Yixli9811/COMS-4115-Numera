@@ -4,10 +4,25 @@ class CodeGenerator:
     def __init__(self):
         self.instructions = []
         self.temp_counter = 0
+        self.start_label_counter = 0
+        self.end_label_counter = 0  
+        self.else_label_counter = 0
 
     def new_temp(self):
         self.temp_counter += 1
         return f"t{self.temp_counter}"
+
+    def new_start_label(self):
+        self.start_label_counter += 1
+        return f"start_label_{self.start_label_counter}"
+
+    def new_end_label(self):
+        self.end_label_counter += 1
+        return f"end_label_{self.end_label_counter}"
+
+    def new_else_label(self):
+        self.else_label_counter += 1
+        return f"else_label_{self.else_label_counter}"
 
     def add_instruction(self, instruction):
         self.instructions.append(instruction)
@@ -61,23 +76,28 @@ class CodeGenerator:
 
     def generate_if(self, node):
         condition_temp = self.generate(node.condition)
-        else_label = self.new_temp()
-        end_label = self.new_temp()
+        else_label = self.new_else_label()
 
         self.add_instruction(f"JUMP_IF_FALSE {condition_temp}, {else_label}")
+
         for stmt in node.then_block:
             self.generate(stmt)
-        self.add_instruction(f"JUMP {end_label}")
 
-        self.add_instruction(f"LABEL {else_label}")
         if node.else_block:
+            end_label = self.new_end_label()
+            self.add_instruction(f"JUMP {end_label}")
+            self.add_instruction(f"LABEL {else_label}")
+
             for stmt in node.else_block:
                 self.generate(stmt)
-        self.add_instruction(f"LABEL {end_label}")
+
+            self.add_instruction(f"LABEL {end_label}")
+        else:
+            self.add_instruction(f"LABEL {else_label}")
 
     def generate_while(self, node):
-        start_label = self.new_temp()
-        end_label = self.new_temp()
+        start_label = self.new_start_label()
+        end_label = self.new_end_label()
 
         self.add_instruction(f"LABEL {start_label}")
         condition_temp = self.generate(node.condition)
@@ -88,7 +108,7 @@ class CodeGenerator:
 
         self.add_instruction(f"JUMP {start_label}")
         self.add_instruction(f"LABEL {end_label}")
-    
+
     def generate_input(self, node):
         temp = self.new_temp()
         self.add_instruction(f"INPUT {temp}")
