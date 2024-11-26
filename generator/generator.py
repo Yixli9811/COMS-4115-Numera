@@ -60,7 +60,6 @@ class CodeGenerator:
             self.generate(stmt)
 
     def generate_declaration(self, node):
-        # Reserve space for a variable in memory
         self.add_instruction(f"ALLOC {node.name}")
         if node.initial_value is not None:
             temp = self.generate(node.initial_value)

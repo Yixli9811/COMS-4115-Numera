@@ -34,9 +34,7 @@ class Pipeline:
             print("Generated Code:")
             print(self.instructions)
 
-            # print("\nExecuting Generated Code...")
-            # executor = Executor()
-            # executor.execute(self.generated_code)
+            # TODO: optimize code and execute
 
             print("\nPipeline Execution Complete!")
 
