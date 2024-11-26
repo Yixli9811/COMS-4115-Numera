@@ -52,7 +52,7 @@
 		STORE t1, x
 		```
 5. Arithmetic Operations
-	- Instruction: `ADD temp1, temp2`
+	- Instruction: `BINOP operation, temp1, temp2, result_temp`
 	- Example:
 		```
 		x = a + b;
