@@ -1,6 +1,5 @@
 import sys
-import tokenizer.scanner as scanner
-from parser.parser import Parser
+from pipeline.pipeline import Pipeline
 
 def main():
     if len(sys.argv) != 2:
@@ -16,12 +15,8 @@ def main():
         print(f"Error: File {file} not found.")
         sys.exit(1)
 
-    result = scanner.scan(file)
-    for token in result:
-        print(token)
-    parser = Parser(result)
-    ast = parser.parse()
-    parser.print_ast(ast)
+    pipeline = Pipeline(code)
+    pipeline.run()
 
 if __name__ == "__main__":
     main()

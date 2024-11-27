@@ -1,17 +1,20 @@
 from .grammar import *
 from .token import Token
 
-def scan(filename):
-    print("scanner start...")
-    tokens = []
+class Lexer:
+    def __init__(self):
+        pass
 
-    sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] if not op.isalpha()],
-                       key=lambda x: -len(x))
-    symbols = token_specification[TokenType.SEPARATOR] | token_specification[TokenType.LPAR] | \
-                token_specification[TokenType.RPAR]
-    
-    with (open(filename, 'r', encoding='utf-8') as file):
-        for line_num, line in enumerate(file):
+    def scan(self, code):
+        print("scanner start...")
+        tokens = []
+
+        sorted_operators = sorted([op for op in token_specification[TokenType.OPERATOR] if not op.isalpha()],
+                        key=lambda x: -len(x))
+        symbols = token_specification[TokenType.SEPARATOR] | token_specification[TokenType.LPAR] | \
+                    token_specification[TokenType.RPAR]
+        
+        for line_num, line in enumerate(code.splitlines()):
             line_num = str(int(line_num) + 1)
             input_string = line.strip()
             i = 0
@@ -81,7 +84,7 @@ def scan(filename):
                     num = ''
                     seen_dot = False
                     while i < len(input_string) and (input_string[i].isdigit() or
-                                                     (input_string[i] == '.' and not seen_dot)):
+                                                    (input_string[i] == '.' and not seen_dot)):
                         if input_string[i] == '.':
                             seen_dot = True
                         num += input_string[i]
@@ -93,11 +96,11 @@ def scan(filename):
                             i += 1
                         invalid_identifier = input_string[start:i]
                         raise ValueError(f"Invalid identifier starting with digit: '{invalid_identifier}' "
-                                         f"at line {line_num} position {start}")
+                                        f"at line {line_num} position {start}")
                     tokens.append(Token(TokenType.NUMBER, num, line_num))
 
                 # error state
                 else:
                     raise ValueError(f"Unrecognized character at line {line_num}, position {i}: {c}")
-    print("scanner end")
-    return tokens
+        print("scanner end")
+        return tokens
