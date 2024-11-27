@@ -1,6 +1,7 @@
 from parser.parser import Parser
 from tokenizer.scanner import Lexer
 from generator.generator import CodeGenerator
+from executer.executer import Execute
 
 class Pipeline:
     def __init__(self, source_file):
@@ -28,13 +29,21 @@ class Pipeline:
             parser.print_ast(self.ast)
 
             print("\nStarting Code Generation...")
+            stage = "CodeGenerator"
             generator = CodeGenerator()
             generator.generate(self.ast)
             self.instructions = generator.get_code()
             print("Generated Code:")
             print(self.instructions)
 
-            # TODO: optimize code and execute
+            print("\nStarting Code Execution...")
+            stage = "Execute"
+            executer = Execute(self.instructions)
+            print("Executed Code:")
+            executer.run()
+
+            # TODO: optimize code
+
 
             print("\nPipeline Execution Complete!")
 

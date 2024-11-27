@@ -3,5 +3,5 @@ begin
     var x;
 	x = in();
 	print("I like coding");
-	print(2);
+	print(x);
 end

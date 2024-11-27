@@ -128,7 +128,11 @@ class CodeGenerator:
 
     def generate_constant(self, node):
         temp = self.new_temp()
-        self.add_instruction(f"LOAD_CONST {node.value}, {temp}")
+        if isinstance(node.value, str):
+            value = f'"{node.value}"'  # add ""
+        else:
+            value = node.value
+        self.add_instruction(f"LOAD_CONST {value}, {temp}")
         return temp
 
     def generate_identifier(self, node):
