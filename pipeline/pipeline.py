@@ -42,8 +42,6 @@ class Pipeline:
             print("Executed Code:")
             executer.run()
 
-            # TODO: optimize code
-
 
             print("\nPipeline Execution Complete!")
 
