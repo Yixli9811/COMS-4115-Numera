@@ -70,12 +70,12 @@ class CodeGenerator:
 
     def generate_declaration(self, node):
         self.add_instruction(f"ALLOC {node.name}")
+        if node.name not in self.var_assignments:
+            self.var_assignments[node.name] = []
         if node.initial_value is not None:
             temp = self.generate(node.initial_value)
             self.add_instruction(f"STORE {temp}, {node.name}")
-        if node.name not in self.var_assignments:
-            self.var_assignments[node.name] = []
-        self.var_assignments[node.name].append(len(self.instructions) - 1)
+            self.var_assignments[node.name].append(len(self.instructions) - 1)
 
     def generate_assignment(self, node):
         temp = self.generate(node.value)
