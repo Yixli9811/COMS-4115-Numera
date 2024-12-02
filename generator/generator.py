@@ -1,3 +1,4 @@
+# CodeGenerator.py
 from parser.ast_node import *
 
 class CodeGenerator:
@@ -7,6 +8,8 @@ class CodeGenerator:
         self.start_label_counter = 0
         self.end_label_counter = 0  
         self.else_label_counter = 0
+        self.var_usage = {}
+        self.var_assignments = {}
 
     def new_temp(self):
         self.temp_counter += 1
@@ -58,22 +61,41 @@ class CodeGenerator:
             self.generate(decl)
         for stmt in node.statements:
             self.generate(stmt)
+        # optimize
+        self.optimize()
 
     def generate_declaration(self, node):
         self.add_instruction(f"ALLOC {node.name}")
         if node.initial_value is not None:
             temp = self.generate(node.initial_value)
             self.add_instruction(f"STORE {temp}, {node.name}")
+            if node.name not in self.var_assignments:
+                self.var_assignments[node.name] = []
+            self.var_assignments[node.name].append(len(self.instructions) - 1)
 
     def generate_assignment(self, node):
         temp = self.generate(node.value)
         self.add_instruction(f"STORE {temp}, {node.target.name}")
+        if node.target.name not in self.var_assignments:
+            self.var_assignments[node.target.name] = []
+        self.var_assignments[node.target.name].append(len(self.instructions) - 1)
 
     def generate_print(self, node):
         temp = self.generate(node.expression)
         self.add_instruction(f"PRINT {temp}")
 
     def generate_if(self, node):
+        if isinstance(node.condition, Constant):
+            condition_val = node.condition.value
+            if condition_val:
+                for stmt in node.then_block:
+                    self.generate(stmt)
+            else:
+                if node.else_block:
+                    for stmt in node.else_block:
+                        self.generate(stmt)
+            return
+
         condition_temp = self.generate(node.condition)
         else_label = self.new_else_label()
 
@@ -95,6 +117,17 @@ class CodeGenerator:
             self.add_instruction(f"LABEL {else_label}")
 
     def generate_while(self, node):
+        if isinstance(node.condition, Constant):
+            condition_val = node.condition.value
+            if not condition_val:
+                return
+            start_label = self.new_start_label()
+            self.add_instruction(f"LABEL {start_label}")
+            for stmt in node.body:
+                self.generate(stmt)
+            self.add_instruction(f"JUMP {start_label}")
+            return
+
         start_label = self.new_start_label()
         end_label = self.new_end_label()
 
@@ -114,11 +147,41 @@ class CodeGenerator:
         return temp
 
     def generate_binary_operation(self, node):
-        left = self.generate(node.left)
-        right = self.generate(node.right)
-        temp = self.new_temp()
-        self.add_instruction(f"BINOP {node.operator}, {left}, {right}, {temp}")
-        return temp
+        if isinstance(node.left, Constant) and isinstance(node.right, Constant):
+            left_val = node.left.value
+            right_val = node.right.value
+            result = self.evaluate_binop(node.operator, left_val, right_val)
+            return self.generate_constant(Constant(result))
+        else:
+            left = self.generate(node.left)
+            right = self.generate(node.right)
+            temp = self.new_temp()
+            self.add_instruction(f"BINOP {node.operator}, {left}, {right}, {temp}")
+            return temp
+
+    def evaluate_binop(self, operator, left, right):
+        if operator == '+':
+            return left + right
+        elif operator == '-':
+            return left - right
+        elif operator == '*':
+            return left * right
+        elif operator == '/':
+            return left / right
+        elif operator == '==':
+            return int(left == right)
+        elif operator == '!=':
+            return int(left != right)
+        elif operator == '<':
+            return int(left < right)
+        elif operator == '<=':
+            return int(left <= right)
+        elif operator == '>':
+            return int(left > right)
+        elif operator == '>=':
+            return int(left >= right)
+        else:
+            raise ValueError(f"unknow binop: {operator}")
 
     def generate_unary_operation(self, node):
         operand = self.generate(node.operand)
@@ -128,13 +191,29 @@ class CodeGenerator:
 
     def generate_constant(self, node):
         temp = self.new_temp()
-        self.add_instruction(f"LOAD_CONST {node.value}, {temp}")
+        if isinstance(node.value, str):
+            value = f'"{node.value}"'  #add ""
+        else:
+            value = node.value
+        self.add_instruction(f"LOAD_CONST {value}, {temp}")
         return temp
 
     def generate_identifier(self, node):
         temp = self.new_temp()
         self.add_instruction(f"LOAD {node.name}, {temp}")
+        self.var_usage[node.name] = self.var_usage.get(node.name, 0) + 1
         return temp
+
+    def optimize(self):
+        to_remove = set()
+        for var, assignments in self.var_assignments.items():
+            usage = self.var_usage.get(var, 0)
+            if usage == 0:
+                to_remove.update(assignments)
+            elif usage < len(assignments):
+                to_remove.update(assignments[:-1])
+
+        self.instructions = [instr for idx, instr in enumerate(self.instructions) if idx not in to_remove]
 
     def get_code(self):
         return "\n".join(self.instructions)

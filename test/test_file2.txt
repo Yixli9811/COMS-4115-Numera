@@ -2,5 +2,6 @@ procedure main is
 begin
     var x = 10;
     var y = 12;
+    print("result is :");
     print(10);
 end
