@@ -1,5 +1,9 @@
 # CodeGenerator.py
+import re
 from parser.ast_node import *
+
+def tokenize_instruction(instr):
+    return re.findall(r'"[^"]*"|[^\s,]+', instr)
 
 class CodeGenerator:
     def __init__(self):
@@ -66,11 +70,11 @@ class CodeGenerator:
 
     def generate_declaration(self, node):
         self.add_instruction(f"ALLOC {node.name}")
+        if node.name not in self.var_assignments:
+            self.var_assignments[node.name] = []
         if node.initial_value is not None:
             temp = self.generate(node.initial_value)
             self.add_instruction(f"STORE {temp}, {node.name}")
-            if node.name not in self.var_assignments:
-                self.var_assignments[node.name] = []
             self.var_assignments[node.name].append(len(self.instructions) - 1)
 
     def generate_assignment(self, node):
@@ -205,15 +209,49 @@ class CodeGenerator:
         return temp
 
     def optimize(self):
+        print("Optimizing...")
         to_remove = set()
+
         for var, assignments in self.var_assignments.items():
             usage = self.var_usage.get(var, 0)
             if usage == 0:
                 to_remove.update(assignments)
+                for idx, instr in enumerate(self.instructions):
+                    tokens = tokenize_instruction(instr)
+                    if tokens and tokens[0] == "ALLOC" and tokens[1] == var:
+                        to_remove.add(idx)
             elif usage < len(assignments):
                 to_remove.update(assignments[:-1])
 
-        self.instructions = [instr for idx, instr in enumerate(self.instructions) if idx not in to_remove]
+        self.instructions = [
+            instr for idx, instr in enumerate(self.instructions)
+            if idx not in to_remove
+        ]
+
+        to_remove = set()
+        temp_usage = self.analyze_temp_usage()
+
+        for idx, instr in enumerate(self.instructions):
+            tokens = tokenize_instruction(instr)
+            if tokens and tokens[0] == "LOAD_CONST":
+                _, _, temp = tokens
+                if temp not in temp_usage:
+                    to_remove.add(idx)
+
+        self.instructions = [
+            instr for idx, instr in enumerate(self.instructions)
+            if idx not in to_remove
+        ]
+
+    def analyze_temp_usage(self):
+        temp_usage = set()
+        for instr in self.instructions:
+            tokens = tokenize_instruction(instr)
+            if len(tokens) > 1 and tokens[0] not in ["LOAD", "LOAD_CONST"]:
+                for token in tokens[1:]:
+                    if token.startswith("t"):
+                        temp_usage.add(token)
+        return temp_usage
 
     def get_code(self):
         return "\n".join(self.instructions)
