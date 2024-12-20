@@ -24,9 +24,7 @@ class Execute:
                 self.pc += 1
                 continue
 
-            # parts = instruction.split()
             parts = re.findall(r'"[^"]*"|[^\s,]+', instruction)
-            #print(parts)
             opcode = parts[0]
 
             method_name = f'_execute_{opcode.lower()}'
@@ -34,7 +32,7 @@ class Execute:
             if method:
                 method(parts)
             else:
-                raise ValueError(f"unkown method: {opcode}")
+                raise ValueError(f"Unknown method: {opcode}")
 
             self.pc += 1
 
@@ -65,7 +63,7 @@ class Execute:
             if label in self.labels:
                 self.pc = self.labels[label]
             else:
-                raise ValueError(f"unknow label: {label}")
+                raise ValueError(f"Unknown label: {label}")
 
     def _execute_jump(self, parts):
         # JUMP label
@@ -73,10 +71,11 @@ class Execute:
         if label in self.labels:
             self.pc = self.labels[label]
         else:
-            raise ValueError(f"label not found: {label}")
+            raise ValueError(f"Label not found: {label}")
 
     def _execute_label(self, parts):
-        pass
+        # LABEL label_name
+        pass 
 
     def _execute_input(self, parts):
         # INPUT temp
@@ -88,7 +87,7 @@ class Execute:
             try:
                 value = float(user_input)
             except ValueError:
-                value = user_input
+                value = user_input.strip('"')
         self.temp_vars[temp] = value
 
     def _execute_binop(self, parts):
@@ -131,24 +130,40 @@ class Execute:
         if var_name in self.variables:
             self.temp_vars[temp] = self.variables[var_name]
         else:
-            raise ValueError(f"var not declared: {var_name}")
+            raise ValueError(f"Variable not declared: {var_name}")
+
+    def _execute_shift_left(self, parts):
+        # SHIFT_LEFT src, shift_amount, dest
+        src = parts[1]
+        shift_amount = parts[2]
+        dest = parts[3]
+        value = self._get_value(src)
+        try:
+            shift_bits = int(shift_amount)
+        except ValueError:
+            raise ValueError(f"Invalid shift amount: {shift_amount}")
+        if not isinstance(value, int):
+            raise TypeError(f"SHIFT_LEFT operation requires integer operands, got {type(value)}")
+        result = value << shift_bits
+        self.temp_vars[dest] = result
 
     def _get_value(self, operand):
         if operand.startswith('t'):
             if operand in self.temp_vars:
                 return self.temp_vars[operand]
             else:
-                raise ValueError(f"operand not declared: {operand}")
+                raise ValueError(f"Operand not declared: {operand}")
         elif operand in self.variables:
             return self.variables[operand]
         else:
+            # Attempt to parse as constant
             try:
                 if '.' in operand:
                     return float(operand)
                 else:
                     return int(operand)
             except ValueError:
-                return operand
+                return operand.strip('"')  # Assume it's a string literal
 
     def _apply_binop(self, operator, left, right):
         if operator == '+':
@@ -172,7 +187,7 @@ class Execute:
         elif operator == '>=':
             return int(left >= right)
         else:
-            raise ValueError(f"unknow bunop op: {operator}")
+            raise ValueError(f"Unknown binary operator: {operator}")
 
     def _apply_unary(self, operator, operand):
         if operator == '-':
@@ -182,4 +197,4 @@ class Execute:
         elif operator == 'not':
             return int(not operand)
         else:
-            raise ValueError(f"unkonw unary op: {operator}")
+            raise ValueError(f"Unknown unary operator: {operator}")

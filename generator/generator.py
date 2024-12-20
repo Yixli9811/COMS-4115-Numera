@@ -14,8 +14,7 @@ class CodeGenerator:
         self.else_label_counter = 0
         self.var_usage = {}
         self.var_assignments = {}
-        self.constant_vars = {}  #  monitor constant variable --- Constant Propagation
-        self.expr_cache = {}  # common expression --- Common Elimination
+        self.expr_cache = {}  # Cache for common subexpressions
 
     def new_temp(self):
         self.temp_counter += 1
@@ -35,6 +34,12 @@ class CodeGenerator:
 
     def add_instruction(self, instruction):
         self.instructions.append(instruction)
+
+    def get_expr_key(self, operator, operands):
+        commutative_ops = {'+', '*', '==', '!=', '<=', '>=', 'and', 'or'}
+        if operator in commutative_ops:
+            operands = sorted(operands)
+        return (operator, tuple(operands))
 
     def generate(self, node):
         if isinstance(node, Program):
@@ -67,7 +72,7 @@ class CodeGenerator:
             self.generate(decl)
         for stmt in node.statements:
             self.generate(stmt)
-        # optimize
+        # Optimize
         self.optimize()
 
     def generate_declaration(self, node):
@@ -78,9 +83,8 @@ class CodeGenerator:
             temp = self.generate(node.initial_value)
             self.add_instruction(f"STORE {temp}, {node.name}")
             self.var_assignments[node.name].append(len(self.instructions) - 1)
-            # check if variable is constant --- Constant Propagation
-            if isinstance(node.initial_value, Constant):
-                self.constant_vars[node.name] = node.initial_value.value
+            # Invalidate expressions involving this variable
+            self.invalidate_expr_cache(node.name)
 
     def generate_assignment(self, node):
         temp = self.generate(node.value)
@@ -88,12 +92,8 @@ class CodeGenerator:
         if node.target.name not in self.var_assignments:
             self.var_assignments[node.target.name] = []
         self.var_assignments[node.target.name].append(len(self.instructions) - 1)
-        # check if value of this variable is constant --- Constant Propagation
-        if isinstance(node.value, Constant):
-            self.constant_vars[node.target.name] = node.value.value
-        else:
-            if node.target.name in self.constant_vars:
-                del self.constant_vars[node.target.name]
+        # Invalidate expressions involving this variable
+        self.invalidate_expr_cache(node.target.name)
 
     def generate_print(self, node):
         temp = self.generate(node.expression)
@@ -162,35 +162,24 @@ class CodeGenerator:
         return temp
 
     def generate_binary_operation(self, node):
-        # check if two op is variable --- Common Elimination
         if isinstance(node.left, Constant) and isinstance(node.right, Constant):
             left_val = node.left.value
             right_val = node.right.value
             result = self.evaluate_binop(node.operator, left_val, right_val)
             return self.generate_constant(Constant(result))
         else:
-            # create a key for experssion --- Common Elimination
-            expr_key = (node.operator, self.get_operand_key(node.left), self.get_operand_key(node.right))
+            left = self.generate(node.left)
+            right = self.generate(node.right)
+            
+            expr_key = self.get_expr_key(node.operator, [left, right])
+            
             if expr_key in self.expr_cache:
                 return self.expr_cache[expr_key]
             else:
-                left = self.generate(node.left)
-                right = self.generate(node.right)
                 temp = self.new_temp()
                 self.add_instruction(f"BINOP {node.operator}, {left}, {right}, {temp}")
                 self.expr_cache[expr_key] = temp
                 return temp
-            
-    # Common Elimination
-    def get_operand_key(self, operand):
-        if isinstance(operand, Constant):
-            return ('const', operand.value)
-        elif isinstance(operand, Identifier):
-            return ('var', operand.name)
-        elif isinstance(operand, BinaryOperation):
-            return ('expr', operand.operator, self.get_operand_key(operand.left), self.get_operand_key(operand.right))
-        else:
-            return ('unknown',)
 
     def evaluate_binop(self, operator, left, right):
         if operator == '+':
@@ -214,13 +203,20 @@ class CodeGenerator:
         elif operator == '>=':
             return int(left >= right)
         else:
-            raise ValueError(f"unknow binop: {operator}")
+            raise ValueError(f"unknown binop: {operator}")
 
     def generate_unary_operation(self, node):
         operand = self.generate(node.operand)
-        temp = self.new_temp()
-        self.add_instruction(f"UNARY {node.operator}, {operand}, {temp}")
-        return temp
+        
+        expr_key = self.get_expr_key(node.operator, [operand])
+        
+        if expr_key in self.expr_cache:
+            return self.expr_cache[expr_key]
+        else:
+            temp = self.new_temp()
+            self.add_instruction(f"UNARY {node.operator}, {operand}, {temp}")
+            self.expr_cache[expr_key] = temp
+            return temp
 
     def generate_constant(self, node):
         temp = self.new_temp()
@@ -232,15 +228,53 @@ class CodeGenerator:
         return temp
 
     def generate_identifier(self, node):
-        if node.name in self.constant_vars:
-            # use constant to replace variable --- Constant Propagation
-            return self.generate_constant(Constant(self.constant_vars[node.name]))
         temp = self.new_temp()
         self.add_instruction(f"LOAD {node.name}, {temp}")
         self.var_usage[node.name] = self.var_usage.get(node.name, 0) + 1
         return temp
+
+    def invalidate_expr_cache(self, var_name):
+        keys_to_remove = []
+        for expr_key, temp in self.expr_cache.items():
+            operator, operands = expr_key
+            for operand in operands:
+                for instr in self.instructions:
+                    tokens = tokenize_instruction(instr)
+                    if tokens and tokens[0] == "LOAD" and tokens[1] == var_name and tokens[2] == operand:
+                        keys_to_remove.append(expr_key)
+                        break
+        for key in keys_to_remove:
+            del self.expr_cache[key]
+
+    def optimize(self):
+        print("Optimizing...")
+        self.common_elimination()
+        self.propagate_constants()
+        self.remove_dead_code()
+        self.optimize_strength_reduction()
+
+        self.expr_cache.clear()
+
+
+    def common_elimination(self):
+        pass
+
+    def analyze_temp_usage(self):
+        temp_usage = set()
+        for instr in self.instructions:
+            tokens = tokenize_instruction(instr)
+            if len(tokens) > 1 and tokens[0] not in ["LOAD", "LOAD_CONST"]:
+                for token in tokens[1:]:
+                    if token.startswith("t"):
+                        temp_usage.add(token)
+        return temp_usage
+
+    def get_code(self):
+        code = "\n".join(self.instructions)
+        print("Generated Instructions:\n" + code) 
+        return code
     
-    # optimize 2
+
     def remove_dead_code(self):
         to_remove = set()
 
@@ -275,73 +309,198 @@ class CodeGenerator:
             if idx not in to_remove
         ]
 
-    # optimize 3
-    def loop_invariant_code_motion(self):
-        optimized_instructions = []
-        i = 0
-        while i < len(self.instructions):
-            instr = self.instructions[i]
+
+    def propagate_constants(self):
+        print("Performing constant propagation...")
+        constant_values = {}
+        temp_constant_values = {}
+        new_instructions = []
+
+        for instr in self.instructions:
             tokens = tokenize_instruction(instr)
-            if tokens and tokens[0] == "LABEL" and tokens[1].startswith("start_label"):
-                loop_start = i
-                # find end 
-                end_label = None
-                for j in range(i + 1, len(self.instructions)):
-                    tokens_j = tokenize_instruction(self.instructions[j])
-                    if tokens_j and tokens_j[0] == "LABEL" and tokens_j[1].startswith("end_label"):
-                        end_label = j
-                        break
-                if end_label is not None:
-                    invariants = []
-                    loop_vars = self.get_loop_variables(loop_start, end_label)
-                    for k in range(loop_start + 1, end_label):
-                        instr_k = self.instructions[k]
-                        tokens_k = tokenize_instruction(instr_k)
-                        if self.is_loop_invariant(tokens_k, loop_vars):
-                            invariants.append((k, instr_k))
-                    for (k, instr_k) in reversed(invariants):
-                        optimized_instructions.insert(loop_start, instr_k)
-                        del self.instructions[k]
-                optimized_instructions.append(instr)
+            if not tokens:
+                new_instructions.append(instr)
+                continue
+
+            op = tokens[0]
+
+            if op == "LOAD_CONST":
+                value, temp = tokens[1], tokens[2]
+                if value.startswith('"') and value.endswith('"'):
+                    parsed_value = value.strip('"')
+                elif '.' in value:
+                    parsed_value = float(value)
+                else:
+                    try:
+                        parsed_value = int(value)
+                    except ValueError:
+                        parsed_value = value  
+                temp_constant_values[temp] = parsed_value
+                new_instructions.append(instr)
+            elif op == "STORE":
+                src, dest = tokens[1], tokens[2]
+                if src.startswith("t") and src in temp_constant_values:
+                    constant_values[dest] = temp_constant_values[src]
+                elif src.startswith('"') and src.endswith('"'):
+                    constant_values[dest] = src.strip('"')
+                else:
+                    constant_values.pop(dest, None)
+                new_instructions.append(instr)
+            elif op == "BINOP":
+                operator, left, right, dest = tokens[1], tokens[2], tokens[3], tokens[4]
+                left_val = None
+                right_val = None
+
+                if left.startswith("t") and left in temp_constant_values:
+                    left_val = temp_constant_values[left]
+                elif left.startswith('"') and left.endswith('"'):
+                    left_val = left.strip('"')
+                else:
+                    try:
+                        left_val = int(left)
+                    except ValueError:
+                        try:
+                            left_val = float(left)
+                        except ValueError:
+                            pass
+
+                if right.startswith("t") and right in temp_constant_values:
+                    right_val = temp_constant_values[right]
+                elif right.startswith('"') and right.endswith('"'):
+                    right_val = right.strip('"')
+                else:
+                    try:
+                        right_val = int(right)
+                    except ValueError:
+                        try:
+                            right_val = float(right)
+                        except ValueError:
+                            pass
+
+                if left_val is not None and right_val is not None:
+                    result = self.evaluate_binop(operator, left_val, right_val)
+                    new_instr = f"LOAD_CONST {result}, {dest}"
+                    new_instructions.append(new_instr)
+                    temp_constant_values[dest] = result
+                else:
+                    temp_constant_values.pop(dest, None)
+                    new_instructions.append(instr)
+            elif op == "UNARY":
+                operator, operand, dest = tokens[1], tokens[2], tokens[3]
+                operand_val = None
+
+                if operand.startswith("t") and operand in temp_constant_values:
+                    operand_val = temp_constant_values[operand]
+                elif operand.startswith('"') and operand.endswith('"'):
+                    operand_val = operand.strip('"')
+                else:
+                    try:
+                        operand_val = int(operand)
+                    except ValueError:
+                        try:
+                            operand_val = float(operand)
+                        except ValueError:
+                            pass
+
+                if operand_val is not None:
+                    result = self.evaluate_unop(operator, operand_val)
+                    new_instr = f"LOAD_CONST {result}, {dest}"
+                    new_instructions.append(new_instr)
+                    temp_constant_values[dest] = result
+                else:
+                    temp_constant_values.pop(dest, None)
+                    new_instructions.append(instr)
+            elif op == "LOAD":
+                var, temp = tokens[1], tokens[2]
+                if var in constant_values:
+                    const_value = constant_values[var]
+                    if isinstance(const_value, str):
+                        const_value = f'"{const_value}"'  # Ensure strings are quoted
+                    new_instr = f"LOAD_CONST {const_value}, {temp}"
+                    new_instructions.append(new_instr)
+                    temp_constant_values[temp] = const_value
+                else:
+                    new_instructions.append(instr)
+                    temp_constant_values.pop(temp, None)
+            elif op == "JUMP_IF_FALSE":
+                condition, label = tokens[1], tokens[2]
+                cond_val = None
+
+                if condition.startswith("t") and condition in temp_constant_values:
+                    cond_val = temp_constant_values[condition]
+                elif condition.startswith('"') and condition.endswith('"'):
+                    cond_val = condition.strip('"')
+                else:
+                    try:
+                        cond_val = int(condition)
+                    except ValueError:
+                        try:
+                            cond_val = float(condition)
+                        except ValueError:
+                            pass
+
+                if cond_val is not None:
+                    if not cond_val:
+                        new_instr = f"JUMP {label}"
+                        new_instructions.append(new_instr)
+                    else:
+                        pass 
+                else:
+                    new_instructions.append(instr)
+            elif op == "JUMP":
+                new_instructions.append(instr)
+            elif op == "LABEL":
+                new_instructions.append(instr)
+                constant_values = {}
+                temp_constant_values = {}
+            elif op == "PRINT":
+                new_instructions.append(instr)
+            elif op == "INPUT":
+                new_instructions.append(instr)
+            elif op == "ALLOC":
+                new_instructions.append(instr)
             else:
-                optimized_instructions.append(instr)
-            i += 1
+                new_instructions.append(instr)
+
+        self.instructions = new_instructions
+        self.constant_values = constant_values
+
+    def evaluate_unop(self, operator, operand):
+        if operator == '-':
+            return -operand
+        elif operator == '!':
+            return int(not operand)
+        elif operator == 'not': 
+            return int(not operand)
+        else:
+            raise ValueError(f"Unknown unary operator: {operator}")
+
+    def optimize_strength_reduction(self):
+        print("Performing strength reduction optimizations...")
+        optimized_instructions = []
+        for instr in self.instructions:
+            tokens = tokenize_instruction(instr)
+            if tokens and tokens[0] == "BINOP" and tokens[1] == "*":
+                x = tokens[2]
+                n = tokens[3]
+                dest = tokens[4]
+                if self.is_power_of_two(n):
+                    shift_amount = int(math.log2(int(n)))
+                    # change with shift left
+                    new_instr = f"SHIFT_LEFT {x}, {shift_amount}, {dest}"
+                    optimized_instructions.append(new_instr)
+                    continue 
+            optimized_instructions.append(instr)
         self.instructions = optimized_instructions
 
-    def get_loop_variables(self, loop_start, loop_end):
-        loop_vars = set()
-        for k in range(loop_start, loop_end):
-            tokens_k = tokenize_instruction(self.instructions[k])
-            if tokens_k and tokens_k[0] == "STORE":
-                loop_vars.add(tokens_k[2])
-        return loop_vars
-
-    def is_loop_invariant(self, tokens, loop_vars):
-        for token in tokens[1:]:
-            if token in loop_vars:
-                return False
-        return True
+    def is_power_of_two(self, n):
+        try:
+            num = int(n)
+            return num > 0 and (num & (num - 1)) == 0
+        except ValueError:
+            return False
+        
     
-    # optimize 1
-    def constant_propagation(self):
-        # aleady implement at code
-        pass
-    
-    # optimize 4
-    def common_subexpression_elimination(self):
-        # aleady implement at code
-        pass
-
-    def optimize(self):
-        print("Optimizing...")
-        self.remove_dead_code()
-        self.constant_propagation()
-        self.common_subexpression_elimination()
-        self.loop_invariant_code_motion()
-        print("Optimization complete.")
-
-       
-
     def analyze_temp_usage(self):
         temp_usage = set()
         for instr in self.instructions:
@@ -353,4 +512,6 @@ class CodeGenerator:
         return temp_usage
 
     def get_code(self):
-        return "\n".join(self.instructions)
+        code = "\n".join(self.instructions)
+        return code
+    
