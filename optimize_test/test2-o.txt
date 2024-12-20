@@ -1,0 +1,32 @@
+before:
+ALLOC a
+LOAD_CONST 5, t1
+STORE t1, a
+ALLOC b
+LOAD a, t2
+LOAD_CONST 2, t3
+BINOP *, t2, t3, t4
+STORE t4, b
+ALLOC c
+LOAD a, t5
+LOAD_CONST 2, t6
+BINOP *, t5, t6, t7
+STORE t7, c
+LOAD b, t8
+LOAD c, t9
+BINOP +, t8, t9, t10
+PRINT t10
+
+
+after:
+ALLOC a
+LOAD_CONST 5, t1
+STORE t1, a
+ALLOC b
+LOAD_CONST 10, t4
+STORE t4, b
+ALLOC c
+LOAD_CONST 10, t7
+STORE t7, c
+LOAD_CONST 20, t10
+PRINT t10

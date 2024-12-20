@@ -1,0 +1,7 @@
+procedure main is
+begin
+	var a = 5;
+    var b = a * 2;
+    var c = a * 2;
+    print(b + c);
+end
